@@ -65,7 +65,9 @@
     "test:coverage": "./node_modules/.bin/codecov",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "postinstall": "ng build @ajsf/core"
+    "precommit": [
+      "ng build @ajsf/core"
+    ]
   },
   "dependencies": {
     "@angular/animations": "^8.1.2",
