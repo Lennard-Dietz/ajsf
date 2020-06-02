@@ -64,10 +64,7 @@
     "test:material": "ng test @ajsf/material",
     "test:coverage": "./node_modules/.bin/codecov",
     "lint": "ng lint",
-    "e2e": "ng e2e",
-    "precommit": [
-      "ng build @ajsf/core"
-    ]
+    "e2e": "ng e2e"
   },
   "dependencies": {
     "@angular/animations": "^8.1.2",
