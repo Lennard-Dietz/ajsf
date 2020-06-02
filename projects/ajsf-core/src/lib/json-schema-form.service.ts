@@ -56,12 +56,13 @@ export class JsonSchemaFormService {
   AngularSchemaFormCompatibility = false;
   tpldata: any = {};
 
-  ajvOptions: any = {
+  ajvOptions: Ajv.Options = {
     allErrors: true,
     jsonPointers: true,
     unknownFormats: "ignore",
+    $data: true,
   };
-  ajv: any = new Ajv(this.ajvOptions); // AJV: Another JSON Schema Validator
+  ajv = new Ajv(this.ajvOptions); // AJV: Another JSON Schema Validator
   validateFormData: any = null; // Compiled AJV function to validate active form's schema
 
   formValues: any = {}; // Internal form data (may not have correct types)
@@ -81,7 +82,7 @@ export class JsonSchemaFormService {
   formValueSubscription: any = null; // Subscription to formGroup.valueChanges observable (for un- and re-subscribing)
   dataChanges: Subject<any> = new Subject(); // Form data observable
   isValidChanges: Subject<any> = new Subject(); // isValid observable
-  validationErrorChanges: Subject<any> = new Subject(); // validationErrors observable
+  validationErrorChanges: Subject<Array<Ajv.ErrorObject>> = new Subject(); // validationErrors observable
 
   arrayMap: Map<string, number> = new Map(); // Maps arrays in data object and number of tuple values
   dataMap: Map<string, any> = new Map(); // Maps paths in form data to schema and formGroup paths
@@ -556,20 +557,29 @@ export class JsonSchemaFormService {
         this.formOptions.validateOnRender === true ||
         (this.formOptions.validateOnRender === "auto" &&
           hasValue(ctx.controlValue));
-      // Subscription for error messages
-      // ctx.formControl.statusChanges.subscribe(
-      //   (status) =>
-      //     (ctx.options.errorMessage =
-      //       status === "VALID"
-      //         ? null
-      //         : this.formatErrors(
-      //             ctx.formControl.errors,
-      //             ctx.options.validationMessages
-      //           ))
-      // );
+
+      // Subscribe to validation errors
       this.validationErrorChanges.subscribe((errors) => {
-        ctx.options.errorMessage = `${errors}`;
+        ctx.options.errorMessage =
+          errors && errors.length > 0
+            ? this.formatErrors(
+                // Filter ajv by the same data path as the initialized control
+                errors
+                  .filter(
+                    (error) => error.dataPath === ctx.layoutNode.dataPointer
+                  )
+                  .reduce(
+                    (filteredErrors, error) => ({
+                      ...filteredErrors,
+                      [error.keyword]: true,
+                    }),
+                    {}
+                  ),
+                ctx.options.validationMessages
+              )
+            : null;
       });
+
       ctx.formControl.valueChanges.subscribe((value) => {
         if (!!value) {
           ctx.controlValue = value;
